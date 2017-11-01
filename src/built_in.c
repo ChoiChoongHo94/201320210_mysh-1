@@ -32,12 +32,17 @@ int do_pwd(int argc, char** argv) {
   return 0;
 }
 
+
 int do_fg(int argc, char** argv) {
   if (!validate_fg_argv(argc, argv))
     return -1;
 
   // TODO: Fill this.
-
+  
+  
+  printf("   Running  %s", *argv);  
+  wait();  
+  
   return 0;
 }
 

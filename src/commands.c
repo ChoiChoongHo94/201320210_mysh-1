@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #include "commands.h"
 #include "built_in.h"
+#include "utils.h"
 
 static struct built_in_command built_in_commands[] = {
   { "cd", do_cd, validate_cd_argv },
@@ -30,7 +34,29 @@ static int is_built_in_command(const char* command_name)
  */
 int evaluate_command(int n_commands, struct single_command (*commands)[512])
 {
-  if (n_commands > 0) {
+
+  char * tok= (*commands)->argv[0]; 
+  short int isPipe =0 ;
+  short int isBg =0;
+  int i=0;
+
+  while(tok != NULL){   //test isPip
+    if(tok == "|")  isPipe =1;
+    tok = (*commands)->argv[++i];
+  }
+
+  if((*commands)->argv[n_commands-1] == "&"){ // test isBG
+    isBg = 1; (*commands)->argv[n_commands-1] = NULL; n_commands--;
+  }   
+
+
+  if(isPipe==1){ //pipeline implement
+
+
+	return 4;
+  }
+
+  else if (n_commands > 0) {
     struct single_command* com = (*commands);
 
     assert(com->argc != 0);
@@ -49,9 +75,28 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       return 0;
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
-    } else if(com->argv[0][0]=='/'){
-      return 2;
-    } else {
+    } else if(com->argv[0][0]=='/'){  // may be changed later
+         int  pid;
+         if(isBg==1) {  //bg implementation
+           pid=fork();
+           if(pid == 0){
+             printf("%d\n",getpid());
+             execv((*commands)->argv[0],(*commands)->argv);
+             // should implememt strcat
+             printf("%d done  %s",getpid(), (*commands)->argv[0]);  exit(1);
+           }
+           return 3;
+         }
+
+	 else{  //just process creacion
+	   pid = fork();
+	   if(pid ==0) {
+             execv((*commands)->argv[0], (*commands)->argv);  exit(1);
+           }       
+         return 2;
+         }
+    }  
+    else {
       fprintf(stderr, "%s: command not found\n", com->argv[0]);
       return -1;
     }
@@ -66,7 +111,6 @@ void free_commands(int n_commands, struct single_command (*commands)[512])
     struct single_command *com = (*commands) + i;
     int argc = com->argc;
     char** argv = com->argv;
-
     for (int j = 0; j < argc; ++j) {
       free(argv[j]);
     }
