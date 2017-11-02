@@ -30,7 +30,7 @@ static int is_built_in_command(const char* command_name)
   return -1; // Not found
 }
 
-/*
+ /*
  * Description: Currently this function only handles single built_in commands. You should modify this structure to launch process and offer pipeline functionality.
  */
 int evaluate_command(int n_commands, struct single_command (*commands)[512])
@@ -49,66 +49,9 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
   if((*commands)->argv[n_commands-1] == "&"){ // test isBG
     isBg = 1; (*commands)->argv[n_commands-1] = NULL; n_commands--;
   }   
+  
 
-  i=0
-  int j=0;  // j+1 = file number
-  if(isPipe==1){ //pipeline implement
-	while((*commands)[j]->argv[i] != NULL){
-		if((*commands)[j]->argv[i] == "|"){
-			(*commands)[j]->argv[i++] = NULL;
-			int k=j+1;
-			int h=0;
-			while((*commands)[j]->argv[i] != NULL){
-				(*commands)[k]->argv[h++] = (*commands)[j]->argv[i++];
-			}
-			i =0; j ++; 
-		}
-		else i++;
-	}
-	i=0;
-	while((*commands)[i] != NULL){
-		int pid = fork();
-		if(pid > 0){
-			int server_socket;
-			int client_socket;
-			int client_addr_size;
-			
-			struct sockaddr_un server_addr;
-			struct sockaddr_un client_addr;
-			
-			
-			server_socket = socket(PF_FILE, SOCK_STREAM, 0);
-			//if error
-			memset( &server_addr, 0 , sizeof(server_addr));
-			server_addr.sun_family = AF_UNIX;
-			strcpy(server_addr.sunpath, FILE_SERVER);
-			bind(server_socket,(struct sockaddr*)&server_addr, sizeof(server_addr))
-			while(1){
-				// pthread should be made
-				listen(server_socket,5);
-				
-				client_addr_size = sizeof(client_addr);
-				client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
-							&client_Addr_size);
-				// communicate
-				close(client_socket);
-			}
-		}
-	
-		else{ // child
-			int client_socket = socket(PF_FILE , SOCK_STREAM, 0);
-			int client_addr_size;
-			struct sockaddr_un server_addr;
-			memset(&server_addr, 0 ,sizeof(server_addr));
-			server_addr.sun_family = AF_UNIX;
-			strcpy(server_addr.sun_path, FILE_SERVER);
-			connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
-			//communicate
-		}
-	}
-	return 4;
-	
-  }
+  
 
   else if (n_commands > 0) {
     struct single_command* com = (*commands);
@@ -150,6 +93,69 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
          return 2;
          }
     }  
+	else if (isPipe == 1) { //pipeline implement
+		i = 0;
+		int j = 0;  // j+1 = file number
+		while ((*commands)[j]->argv[i] != NULL) {
+			if ((*commands)[j]->argv[i] == "|") {
+				(*commands)[j]->argv[i++] = NULL;
+				int k = j + 1;
+				int h = 0;
+				while ((*commands)[j]->argv[i] != NULL) {
+					(*commands)[k]->argv[h++] = (*commands)[j]->argv[i++];
+				}
+				i = 0; j++;
+			}
+			else i++;
+		}
+		i = 0;
+		while ((*commands)[i] != NULL) {
+			int pid = fork();
+			if (pid > 0) {
+				int server_socket;
+				int client_socket;
+				int client_addr_size;
+
+				struct sockaddr_un server_addr;
+				struct sockaddr_un client_addr;
+
+
+				server_socket = socket(PF_FILE, SOCK_STREAM, 0);
+				//if error
+				memset(&server_addr, 0, sizeof(server_addr));
+				server_addr.sun_family = AF_UNIX;
+				strcpy(server_addr.sunpath, (*commands)[j]->argv[0]);
+				bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr))
+					while (1) {
+						// pthread should be made
+						listen(server_socket, 5);
+
+						client_addr_size = sizeof(client_addr);
+						client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
+							&client_Addr_size);
+						// communicate
+						write(server_socket, (*commands)[j]->argv[0], sizeof((*commands)[j]->argv[0]));
+						dup2(server_socket, 1);
+						sleep(2);
+						close(client_socket);
+					}
+			}
+
+			else { // child
+				int client_socket = socket(PF_FILE, SOCK_STREAM, 0);
+				int client_addr_size;
+				struct sockaddr_un server_addr;
+				memset(&server_addr, 0, sizeof(server_addr));
+				server_addr.sun_family = AF_UNIX;
+				strcpy(server_addr.sun_path, (*commands)[j + 1]->argv[0]);
+				connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
+				//communicate
+				write(client_socket, (*commands)[j]->argv[1], sizeof((*commands)[j]->argv[1]))
+			}
+		}
+		return 4;
+
+	}
     else {
       fprintf(stderr, "%s: command not found\n", com->argv[0]);
       return -1;

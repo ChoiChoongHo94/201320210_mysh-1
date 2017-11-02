@@ -22,12 +22,6 @@ int main()
     int ret = evaluate_command(n_commands, &commands);
 
 
-    //me
-    
-
-    
-    //me end
-
 
 
     free_commands(n_commands, &commands);
