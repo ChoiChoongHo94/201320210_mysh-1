@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <linux/limits.h>
-
+#include <wait.h>
 #include "built_in.h"
 
 int do_cd(int argc, char** argv) {
@@ -39,10 +40,9 @@ int do_fg(int argc, char** argv) {
 
   // TODO: Fill this.
   
-  
-  printf("%d  Running  %s",getpid(), *argv);  
-  wait();  
-  
+  int status;  
+  printf("%d  Running  %s\n",getpid()+1, *argv);  
+  wait(&status);   
   return 0;
 }
 

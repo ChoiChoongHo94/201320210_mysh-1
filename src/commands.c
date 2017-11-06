@@ -35,31 +35,24 @@ static int is_built_in_command(const char* command_name)
  * Description:ou should modify this structure to launch process and offer pipeline functionality.
  */
 int evaluate_command(int n_commands, struct single_command (*commands)[512])
-{
- 
-  short int isPipe =0 ;
-  short int isBg =0;
- 
-  //pipe test
-  if(n_commands>1) isPipe =1;
-  printf("%d\n",isPipe);
-  //bg test
-  int i=0;
-  int last = n_commands - 1;
-  while((*commands + last)->argv[i] != NULL){
-	  if ((*commands + last)->argv[i] == "&" && (*commands + last)->argv[i + 1] == NULL) {
-		  isBg = 1; (*commands + last)->argv[i] = NULL;
-	  }
-	else i++;
-  }
-  printf("%d\n",isBg);
-  //test end
-  
+{ 
    if (n_commands > 0) {
 
-    struct single_command* com = (*commands);
+	    struct single_command* com = (*commands);
+    
+  	    assert(com->argc != 0);
+  	    short int isPipe =0 ;
+  	    short int isBg =0;
 
-    assert(com->argc != 0);
+	  //pipe test
+	  if(n_commands>1) isPipe =1;
+	  printf("%d\n",isPipe);
+	  //bg test
+	  int last = n_commands -1;
+  	  if (strcmp(com->argv[(com->argc)-1],"&")==0) {
+     		  isBg = 1; com->argv[(com->argc)-1] = NULL;
+	  }
+ 	  printf("%d\n%d\n%s\n",isBg,com->argc,com->argv[com->argc-1]);  
 
     int built_in_pos = is_built_in_command(com->argv[0]);
     if (built_in_pos != -1) {
@@ -78,10 +71,10 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 
     } 
 
-	else if(com->argv[0][0]=='/'){  // may be changed later
+      else if(com->argv[0][0]=='/'){  // may be changed later
 
 				if (isPipe == 1) { //pipeline implement
-					i = 0;
+					int i = 0;
 					//	while (i<n_commands-1) {
 					int pid = fork();
 					if (pid > 0) {  //parent
@@ -94,11 +87,12 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 						struct sockaddr client_addr;
 			
 			
-						server_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-			
-			
+						server_socket = socket(AF_UNIX, SOCK_STREAM,0);
+							
 						memset(&server_addr, 0, sizeof(server_addr));
 						server_addr.sa_family = AF_UNIX;
+						int option =1;
+                                                setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 						if (-1 == bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
 							printf("not binded!\n");
 			
@@ -129,11 +123,11 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 						memset(&server_addr, 0, sizeof(server_addr));
 						server_addr.sa_family = AF_UNIX;
 			
-						if (-1 == connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
-							printf("not connect!\n");
+					        connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
 			
 						if (fork() == 0) {
 							dup2(client_socket, 0);
+							
 							execv(com[i + 1].argv[0], com[i + 1].argv);
 						}
 			
@@ -148,27 +142,23 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 			
 				}// end pipe
  
-         if(isBg==1) {  //bg implementation
+           else if(isBg==1) {  //bg implementation
            int pid=fork();
            if(pid == 0){
-				 int pid2 = fork();
-				 if (pid2 == 0) {
-					 printf("%d\n", getppid());
-					 if(fork()==0)
-					 execv((*commands)->argv[0], (*commands)->argv);
-					 else {
-
-					 }
-				 }// should implememt strcat
-				 else {
-					 wait();
-					 printf("%d done  %s", pid2, (*commands)->argv[0]);  exit(1);
-				 } 
-            }
-		   else wait();
-           return 3;
-         } //end bg
-
+		if(fork()==0){
+		 printf("%d\n",getppid());
+		 execv(com->argv[0], com->argv);
+           	 }
+	   	 else {
+			int status;
+			wait(&status);
+			printf("%d  done  %s\n",getpid(),com->argv[0]);	
+	   	 }
+	   }
+	   
+            return 3;
+           } //end bg
+	
          else{  //just process creacion
            int pid = fork();
            if(pid ==0) {
@@ -182,7 +172,6 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       fprintf(stderr, "%s: command not found\n", com->argv[0]);
       return -1;
     }
-  }
 
   return 0;
 }
@@ -199,6 +188,5 @@ void free_commands(int n_commands, struct single_command (*commands)[512])
 
     free(argv);
   }
-
-  memset((*commands), 0, sizeof(struct single_command) * n_commands);
+   memset((*commands), 0, sizeof(struct single_command) * n_commands);
 }
