@@ -40,7 +40,7 @@ int do_fg(int argc, char** argv) {
   // TODO: Fill this.
   
   
-  printf("   Running  %s", *argv);  
+  printf("%d  Running  %s",getpid(), *argv);  
   wait();  
   
   return 0;

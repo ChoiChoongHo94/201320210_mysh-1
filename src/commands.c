@@ -153,15 +153,19 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
            if(pid == 0){
 				 int pid2 = fork();
 				 if (pid2 == 0) {
-					 printf("%d\n", getpid());
+					 printf("%d\n", getppid());
+					 if(fork()==0)
 					 execv((*commands)->argv[0], (*commands)->argv);
+					 else {
+
+					 }
 				 }// should implememt strcat
 				 else {
 					 wait();
 					 printf("%d done  %s", pid2, (*commands)->argv[0]);  exit(1);
 				 } 
             }
-		   //parent process is going
+		   else wait();
            return 3;
          } //end bg
 
