@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <wait.h>
-
+#include <sys/un.h>
 
 #include "commands.h"
 #include "built_in.h"
@@ -83,18 +83,19 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 						int client_socket;
 						int client_addr_size;
 			
-						struct sockaddr server_addr;
-						struct sockaddr client_addr;
+						struct sockaddr_un server_addr;
+						struct sockaddr_un client_addr;
 			
 			
 						server_socket = socket(AF_UNIX, SOCK_STREAM,0);
 							
 						memset(&server_addr, 0, sizeof(server_addr));
-						server_addr.sa_family = AF_UNIX;
+						server_addr.sun_family = AF_UNIX;
+						strcpy(server_addr.sun_path, com[i].argv[0]);
 						int option =1;
                                                 setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 						if (-1 == bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
-							printf("not binded!\n");
+							perror("blind error");
 			
 			
 						if (-1 == listen(server_socket, 5)) printf("not listened!\n");
@@ -119,10 +120,10 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 					else { // child
 						int client_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 			
-						struct sockaddr server_addr;
+						struct sockaddr_un server_addr;
 						memset(&server_addr, 0, sizeof(server_addr));
-						server_addr.sa_family = AF_UNIX;
-			
+						server_addr.sun_family = AF_UNIX;
+						strcpy(server_addr.sun_path,com[i+1].argv[0]);
 					        connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
 			
 						if (fork() == 0) {
@@ -134,6 +135,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 						else {
 							int status;
 							wait(&status);
+							close(client_socket);
 							exit(1);
 						}
 					}
@@ -156,6 +158,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 	   	 }
 	   }
 	   
+	   //
             return 3;
            } //end bg
 	
@@ -175,6 +178,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 
   return 0;
 }
+}
+
 
 void free_commands(int n_commands, struct single_command (*commands)[512])
 {

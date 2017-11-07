@@ -41,7 +41,7 @@ int do_fg(int argc, char** argv) {
   // TODO: Fill this.
   
   int status;  
-  printf("%d  Running  %s\n",getpid()+1, *argv);  
+  printf("%d  Running  \n",getpid()+1);  
   wait(&status);   
   return 0;
 }
