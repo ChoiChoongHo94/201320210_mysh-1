@@ -52,7 +52,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
   	  if (strcmp(com->argv[(com->argc)-1],"&")==0) {
      		  isBg = 1; com->argv[(com->argc)-1] = NULL;
 	  }
- 	  printf("%d\n%d\n%s\n",isBg,com->argc,com->argv[com->argc-1]);  
+ 	  printf("%d\n%d\n",isBg,com->argc);  
 
     int built_in_pos = is_built_in_command(com->argv[0]);
     if (built_in_pos != -1) {
@@ -91,29 +91,30 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 							
 						memset(&server_addr, 0, sizeof(server_addr));
 						server_addr.sun_family = AF_UNIX;
-						strcpy(server_addr.sun_path, com[i].argv[0]);
+						unlink("server_socket");	
+						strcpy(server_addr.sun_path, "server_socket");
 						int option =1;
                                                 setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 						if (-1 == bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
 							perror("blind error");
 			
 			
-						if (-1 == listen(server_socket, 5)) printf("not listened!\n");
+						if (-1 == listen(server_socket, 5)) perror("listen error");
 						client_addr_size = sizeof(client_addr);
 						client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
 							&client_addr_size);
-						if (-1 == client_socket) printf("not accept!\n");
+						if (-1 == client_socket) perror("accept error");
 			
 						if (fork() == 0) {
 							dup2(client_socket, 1);
 							execv(com[i].argv[0], com[i].argv);
 						}
 			
-						else { //parent
-							int status;
-							wait(&status);
-							close(client_socket);
-						}
+						 //parent
+						int status;
+						wait(&status);
+						close(client_socket);
+						close(server_socket);
 			
 					}
 			
@@ -123,12 +124,11 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 						struct sockaddr_un server_addr;
 						memset(&server_addr, 0, sizeof(server_addr));
 						server_addr.sun_family = AF_UNIX;
-						strcpy(server_addr.sun_path,com[i+1].argv[0]);
+						strcpy(server_addr.sun_path,"server_socket");
 					        connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
 			
 						if (fork() == 0) {
-							dup2(client_socket, 0);
-							
+							dup2(client_socket, 0);	
 							execv(com[i + 1].argv[0], com[i + 1].argv);
 						}
 			
