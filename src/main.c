@@ -13,7 +13,7 @@ int main()
 {
   char buf[8096];
   signal(SIGTSTP, &catch_sigtstp);
-  	
+  signal(SIGINT, &catch_sigint); 	
   while (1) {
     fgets(buf, 8096, stdin);
   //  signal(SIGTSTP, &catch_sigtstp);

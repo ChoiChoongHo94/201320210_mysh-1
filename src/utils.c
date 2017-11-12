@@ -41,6 +41,12 @@ void parse_single_command(const char* command,
 
   char *saveptr = NULL;
   char *tok = strtok_r(buf, " \n\t", &saveptr);
+  
+  if(strcmp(tok,"ls")==0) tok = "/bin/ls";
+  else if(strcmp(tok,"grep")==0) tok = "/bin/grep";
+  else if(strcmp(tok,"cat")==0) tok = "/bin/cat";
+  else if(strcmp(tok,"vim")==0) tok = "/usr/bin/vim";
+  
 
   int ti = 0;
 

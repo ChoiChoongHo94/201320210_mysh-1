@@ -13,6 +13,9 @@
 #include "built_in.h"
 #include "utils.h"
 void* serverSocket(void*);
+char ***temp;
+
+
 
 static struct built_in_command built_in_commands[] = {
   { "cd", do_cd, validate_cd_argv },
@@ -86,49 +89,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
                                   		 	pthread_attr_init(&attr);
 							pthread_create(&tid,&attr,serverSocket,(void *)&(com[0]));
 							pthread_join(tid,NULL);
-							exit(1);	
+							exit(1);
 						}
-				/*		if(fork() ==0){
-					
-							int server_socket;// = (int *)malloc(sizeof(int));
-                                               		int client_socket;
-                                               		int client_addr_size;
-
-                                            		struct sockaddr_un server_addr;
-                                               		struct sockaddr_un client_addr;
-
-                                                	server_socket = socket(AF_UNIX, SOCK_STREAM,0);
-                                              		memset(&server_addr, 0, sizeof(server_addr));
-                                               		server_addr.sun_family = AF_UNIX;
-                                               		unlink("server_socket");
-                                             		strcpy(server_addr.sun_path, "server_socket");
-                                             		int option =1;
-                                                	setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-                                       	        	if (-1 == bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
-                                       	                	 perror("blind error");
-
-						
-                                               		if (-1 == listen(server_socket, 5)) perror("listen error");
-                                              		client_addr_size = sizeof(client_addr);
-                                               		client_socket = accept(server_socket, (struct sockaddr*)&client_addr,
-                                          	              &client_addr_size);
-                                               		if (-1 == client_socket) perror("accept error");
-
-                                               		if(fork() ==0){
-								 printf("s\n");
-                                               	        	 dup2(client_socket,1);
-                                               	        	 execv(com[i].argv[0], com[i].argv);
-                                               		}
-
-                                                	//parent
-							else{
-        	                                       		int status;
-                	                              		wait(&status);
-                        	                    		close(client_socket);
-                                	               		close(server_socket);
-								exit(1);
-							}
-						}*/
 							
 					}
 
@@ -175,6 +137,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
                               		 int status;
                                		 wait(&status);
                               		 printf("%d  done  %s\n",getpid(),com->argv[0]);
+					 exit(1);
                           	}
        			   }
 		   	   return 3;
@@ -185,6 +148,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
      		     	 if(pid ==0) {
        		     		 execv((*commands)->argv[0], (*commands)->argv);  exit(1);
        		   	 }
+		 	 else{int status; wait(&status);}
         		 return 2;
       		 }// end pc
     
