@@ -40,21 +40,21 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 { 
    if (n_commands > 0) {
 
-	    struct single_command* com = (*commands);
+	  struct single_command* com = (*commands);
     
-  	    assert(com->argc != 0);
-  	    short int isPipe =0 ;
-  	    short int isBg =0;
+  	  assert(com->argc != 0);
+  	  short int isPipe =0 ;
+  	  short int isBg =0;
 
 	  //pipe test
 	  if(n_commands>1) isPipe =1;
-	  printf("%d\n",isPipe);
+	 // printf("%d\n",isPipe);
 	  //bg test
 	  int last = n_commands -1;
   	  if (strcmp(com->argv[(com->argc)-1],"&")==0) {
      		  isBg = 1; com->argv[(com->argc)-1] = NULL;
 	  }
- 	  printf("%d\n",isBg);  
+ 	  //printf("%d\n",isBg);  
 
     int built_in_pos = is_built_in_command(com->argv[0]);
     if (built_in_pos != -1) {
@@ -77,12 +77,18 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 				if (isPipe == 1) { //pipeline implement
 					int i = 0;
 					int pid = fork();
-					if (pid >  0) {  
-						/*pthread_t tid;
-                                                pthread_attr_t attr;
-                                                pthread_attr_init(&attr);
-						pthread_create(&tid,&attr,serverSocket, (void *)com) */
-						if(fork() ==0){
+					if (pid >  0) {
+						
+						if(fork()==0){
+		
+							pthread_t tid;
+                                       		        pthread_attr_t attr;
+                                  		 	pthread_attr_init(&attr);
+							pthread_create(&tid,&attr,serverSocket,(void *)&(com[0]));
+							pthread_join(tid,NULL);
+							exit(1);	
+						}
+				/*		if(fork() ==0){
 					
 							int server_socket;// = (int *)malloc(sizeof(int));
                                                		int client_socket;
@@ -122,7 +128,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
                                 	               		close(server_socket);
 								exit(1);
 							}
-						}
+						}*/
 							
 					}
 
@@ -132,12 +138,15 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
                                             		struct sockaddr_un server_addr;
                                                 	memset(&server_addr, 0, sizeof(server_addr));
                                                 	server_addr.sun_family = AF_UNIX;
-                                                	strcpy(server_addr.sun_path,"server_socket");
-                                                	int tc=connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)); 
-							if( tc == -1) perror("connect error");
-							
+                                                	strcpy(server_addr.sun_path,"server_socket1");
+						        int tc;
+							while(1){		
+                                                	tc=connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)); 
+							//if( tc == -1) perror("connect error");
+							if(tc != -1) break;
+							}
+														
                           		                if (fork() == 0) {
-								printf("c\n");
 								dup2(client_socket,0);
                                                                 execv(com[i + 1].argv[0], com[i + 1].argv);
                                                 	}
@@ -207,7 +216,9 @@ void free_commands(int n_commands, struct single_command (*commands)[512])
 
 
 void* serverSocket(void *data){
-							struct single_command* com = /*(struct single_command)*/data;
+							//struct single_command* com = (struct single_command*)data;
+							struct single_command com = *(struct single_command*)data;
+							//printf("%s %s\n", com.argv[0],com.argv[1]);
                                         		int server_socket;// = (int *)malloc(sizeof(int));
                                                         int client_socket;
                                                         int client_addr_size;
@@ -218,10 +229,9 @@ void* serverSocket(void *data){
                                                         server_socket = socket(AF_UNIX, SOCK_STREAM,0);
                                                         memset(&server_addr, 0, sizeof(server_addr));
                                                         server_addr.sun_family = AF_UNIX;
-                                                        unlink("server_socket");
-                                                        strcpy(server_addr.sun_path, "server_socket");
-                                                        int option =1;
-                                                        setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+							
+                                                        remove("server_socket1");
+                                                        strcpy(server_addr.sun_path, "server_socket1");
                                                         if (-1 == bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
                                                                  perror("blind error");
 
@@ -232,17 +242,20 @@ void* serverSocket(void *data){
                                                         if (-1 == client_socket) perror("accept error");
 
                                                         if(fork() ==0){
-                                                                 printf("s\n");
+                                                                 //printf("s\n");
                                                                  dup2(client_socket,1);
-                                                                 execv(com[0].argv[0], com[0].argv);
+                                                                 execv(com.argv[0], com.argv);
                                                         }
 
                                                         //parent
-                                                        int status;
-                                                        wait(&status);
-                                                        close(client_socket);
-                                                        close(server_socket);
-                 					 pthread_exit(0);
+							else{
+                                                      		int status;
+                                                       		wait(&status);
+                                                       		close(client_socket);
+                                                       		close(server_socket);
+							
+                						pthread_exit(0);
+							}
 }	
 
 
