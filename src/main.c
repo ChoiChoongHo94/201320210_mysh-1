@@ -3,19 +3,27 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <wait.h>
 
 #include "commands.h"
 #include "built_in.h"
 #include "utils.h"
 #include "signal_handlers.h"
+int cpid=-1;
 
 int main()
-{
+{  
+  int bgstatus;
   char buf[8096];
   signal(SIGTSTP, &catch_sigtstp);
   signal(SIGINT, &catch_sigint); 	
   while (1) {
+    if(cpid>0) 
+	if(waitpid(cpid, &bgstatus, WNOHANG) != 0) cpid = -1; 
     fgets(buf, 8096, stdin);
+    if(cpid>0)
+        if(waitpid(cpid, &bgstatus, WNOHANG) != 0) cpid = -1;
+
   //  signal(SIGTSTP, &catch_sigtstp);
 
     struct single_command commands[512];

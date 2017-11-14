@@ -13,7 +13,7 @@
 #include "built_in.h"
 #include "utils.h"
 void* serverSocket(void*);
-char ***temp;
+extern int cpid;
 
 
 
@@ -127,8 +127,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 				}// end pipe
  
        		   else if(isBg==1) {  //bg implementation
-       			   int pid=fork();
-		  	   if(pid == 0){
+       			   cpid=fork();
+		  	   if(cpid == 0){
  				if(fork() ==0 ){
 					 printf("%d\n",getppid());
 					 execv(com->argv[0], com->argv);

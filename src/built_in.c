@@ -8,6 +8,8 @@
 #include <linux/limits.h>
 #include <wait.h>
 #include "built_in.h"
+extern int cpid;
+
 
 int do_cd(int argc, char** argv) {
   if (!validate_cd_argv(argc, argv))
@@ -39,10 +41,14 @@ int do_fg(int argc, char** argv) {
     return -1;
 
   // TODO: Fill this.
-  
+  if(cpid == -1) {
+	printf("No background file.\n"); return 0;
+  }  
+
   int status;  
-  printf("%d  Running  \n",getpid()+1);  
-  wait(&status);   
+  printf("%d  Running  \n",cpid);  
+  wait(&status);
+  cpid = -1;   
   return 0;
 }
 
